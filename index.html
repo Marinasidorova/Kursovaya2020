@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>        
+    <style>
+        .warning
+        {
+            background-color: #ffa9a9;
+        }
+    </style>
+</head>
+<div id="osn">
+    <div>
+        <input type="button" v-for="i in menu" v-on:click="page=i.page;podsvetka_id=-1" v-bind:value="i.name" :disabled="page==i.page" />
+    </div>
+    <div v-if="zagr">
+        <table v-if="page=='orders'" border="1">
+            <tr>
+                <th></th>
+                <th v-if="i!='-'" v-for="i in orders.rus">{{ i }}</th>
+                <th></th>
+            </tr>
+            <tr v-for="stroka in orders.t" v-bind:class="{warning: podsvetka_id===stroka.id}">
+                <td>
+                    <input v-if="orders.red_id!=stroka.id" type="button" value="Изменить" v-on:click="orders.red_id=stroka.id;orders.red_nazv=stroka.component;orders.red_price=stroka.price;orders.red_kvo=stroka.quantity;orders.red_date_order=stroka.date_order.split('.')[2]+'-'+stroka.date_order.split('.')[1]+'-'+stroka.date_order.split('.')[0];orders.red_date_supply=stroka.date_supply.split('.')[2]+'-'+stroka.date_supply.split('.')[1]+'-'+stroka.date_supply.split('.')[0]" />
+                    <input v-if="orders.red_id==stroka.id" type="button" value="Сохранить" v-on:click="save_orders" />
+                    <br/>
+                    <input v-if="orders.red_id==stroka.id" type="button" value="Отмена" v-on:click="orders.red_id=-1" />
+                </td>
+                <td>
+                    {{ stroka.component }}
+                    <br />
+                    <input v-if="(orders.vvod)&&(orders.red_id==stroka.id)" type="text" v-model="orders.red_nazv" />
+                    <select v-if="(!orders.vvod)&&(orders.red_id==stroka.id)" v-model="orders.red_nazv">
+                        <option v-for="i in orders.nazv_vybor">{{ i }}</option>
+                    </select>
+                </td>
+                <td>
+                    {{ stroka.quantity }}
+                    <br />
+                    <input v-if="orders.red_id==stroka.id" min="1" type="number" v-model="orders.red_kvo" />
+                </td>
+                <td>
+                    {{ stroka.date_order }}
+                    <br />
+                    <input v-if="orders.red_id==stroka.id" type="date" v-model="orders.red_date_order" />
+                </td>
+                <td>
+                    {{ stroka.date_supply }}
+                    <br />
+                    <input v-if="orders.red_id==stroka.id" type="date" v-model="orders.red_date_supply" />
+                </td>
+                <td>
+                    {{ stroka.price }}
+                    <br />
+                    <input v-if="orders.red_id==stroka.id" min="0" type="number" v-model="orders.red_price" />
+                </td>
+                <td><input type="button" value="Удалить" v-on:click="delete_from_table('order.csv',stroka.id)" /></td>
+            </tr>
+            <tr>
+                <td><input v-on:click="orders.vvod=!orders.vvod" type="button" value="Создание/выбор" /></td>
+                <td>
+                    <input v-if="orders.vvod" v-model="orders.nazv" type="text" value="" />
+                    <select v-if="!orders.vvod" v-model="orders.nazv">
+                        <option v-for="i in orders.nazv_vybor">{{ i }}</option>
+                    </select>
+                </td>
+                <td><input v-model="orders.kvo" type="number" min="1" /></td>
+                <td><input v-model="orders.date_order" type="date" /></td>
+                <td><input v-model="orders.date_supply" type="date" /></td>
+                <td><input v-model="orders.price" type="number" min="0" /></td>
+                <td><input type="submit" value="Создать" v-on:click="add_to_table_orders" /></td>
+            </tr>
+        </table>
+        <table v-if="page=='sales'" border="1">
+            <tr>
+                <th></th>
+                <th v-if="i!='-'" v-for="i in sales.rus">{{ i }}</th>
+                <th></th>
+            </tr>
+            <tr v-for="stroka in sales.t" v-bind:class="{warning: podsvetka_id===stroka.id}">
+                <td>
+                    <input v-if="sales.red_id!=stroka.id" type="button" value="Изменить" v-on:click="sales.red_id=stroka.id;sales.red_nazv=stroka.computer;sales.red_price=stroka.price;sales.red_kvo=stroka.quantity;sales.red_date_pay=stroka.date_pay.split('.')[2]+'-'+stroka.date_pay.split('.')[1]+'-'+stroka.date_pay.split('.')[0];sales.red_date_ship=stroka.date_ship.split('.')[2]+'-'+stroka.date_ship.split('.')[1]+'-'+stroka.date_ship.split('.')[0]" />
+                    <input v-if="sales.red_id==stroka.id" type="button" value="Сохранить" v-on:click="save_sales" />
+                    <br/>
+                    <input v-if="sales.red_id==stroka.id" type="button" value="Отмена" v-on:click="sales.red_id=-1" />
+                </td>
+                <td>
+                    {{ stroka.computer }}
+                    <br />
+                    <input v-if="(sales.vvod)&&(sales.red_id==stroka.id)" type="text" v-model="sales.red_nazv" />
+                    <select v-if="(!sales.vvod)&&(sales.red_id==stroka.id)" v-model="sales.red_nazv">
+                        <option v-for="i in sales.nazv_vybor">{{ i }}</option>
+                    </select>
+                </td>
+                <td>
+                    {{ stroka.quantity }}
+                    <br />
+                    <input v-if="sales.red_id==stroka.id" min="1" type="number" v-model="sales.red_kvo" />
+                </td>
+                <td>
+                    {{ stroka.date_pay }}
+                    <br />
+                    <input v-if="sales.red_id==stroka.id" type="date" v-model="sales.red_date_pay" />
+                </td>
+                <td>
+                    {{ stroka.date_ship }}
+                    <br />
+                    <input v-if="sales.red_id==stroka.id" type="date" v-model="sales.red_date_ship" />
+                </td>
+                <td>
+                    {{ stroka.price }}
+                    <br />
+                    <input v-if="sales.red_id==stroka.id" min="0" type="number" v-model="sales.red_price" />
+                </td>
+                <td><input type="button" value="Удалить" v-on:click="delete_from_table('sales.csv',stroka.id)" /></td>
+            </tr>
+            <tr>
+                <td><input v-on:click="sales.vvod=!sales.vvod" type="button" value="Создание/выбор" /></td>
+                <td>
+                    <input v-if="sales.vvod" v-model="sales.nazv" type="text" value="" />
+                    <select v-if="!sales.vvod" v-model="sales.nazv">
+                        <option v-for="i in sales.nazv_vybor">{{ i }}</option>
+                    </select>
+                </td>
+                <td><input v-model="sales.kvo" type="number" min="1" /></td>
+                <td><input v-model="sales.date_pay" type="date" /></td>
+                <td><input v-model="sales.date_ship" type="date" /></td>
+                <td><input v-model="sales.price" type="number" min="0" /></td>
+                <td><input type="submit" value="Создать" v-on:click="add_to_table_sales" /></td>
+            </tr>
+        </table>
+        <table v-if="page=='production'" border="1">
+            <tr>
+                <th></th>
+                <th v-if="i!='-'" v-for="i in production.rus">{{ i }}</th>
+                <th></th>
+            </tr>
+            <tr v-for="stroka in production.t" v-bind:class="{warning: podsvetka_id===stroka.id}">
+                <td>
+                    <input v-if="production.red_id!=stroka.id" type="button" value="Изменить" v-on:click="production.red_id=stroka.id;production.red_nazv=stroka.computer;production.red_price=stroka.price;production.red_kvo=stroka.quantity;production.red_date_start=stroka.date_start.split('.')[2]+'-'+stroka.date_start.split('.')[1]+'-'+stroka.date_start.split('.')[0];production.red_date_end=stroka.date_end.split('.')[2]+'-'+stroka.date_end.split('.')[1]+'-'+stroka.date_end.split('.')[0];production.red_date_pay=stroka.date_pay.split('.')[2]+'-'+stroka.date_pay.split('.')[1]+'-'+stroka.date_pay.split('.')[0]" />
+                    <input v-if="production.red_id==stroka.id" type="button" value="Сохранить" v-on:click="save_production" />
+                    <br/>
+                    <input v-if="production.red_id==stroka.id" type="button" value="Отмена" v-on:click="production.red_id=-1" />
+                </td>
+                <td>
+                    {{ stroka.computer }}
+                    <br />
+                    <input v-if="(production.vvod)&&(production.red_id==stroka.id)" type="text" v-model="production.red_nazv" />
+                    <select v-if="(!production.vvod)&&(production.red_id==stroka.id)" v-model="production.red_nazv">
+                        <option v-for="i in production.nazv_vybor">{{ i }}</option>
+                    </select>
+                </td>
+                <td>
+                    {{ stroka.quantity }}
+                    <br />
+                    <input v-if="production.red_id==stroka.id" min="1" type="number" v-model="production.red_kvo" />
+                </td>
+                <td>
+                    {{ stroka.date_start }}
+                    <br />
+                    <input v-if="production.red_id==stroka.id" type="date" v-bind:max="production.red_date_end" v-model="production.red_date_start" />
+                </td>
+                <td>
+                    {{ stroka.date_end }}
+                    <br />
+                    <input v-if="production.red_id==stroka.id" type="date" v-bind:min="production.red_date_start" v-model="production.red_date_end" />
+                </td>
+                <td>
+                    {{ stroka.date_pay }}
+                    <br />
+                    <input v-if="production.red_id==stroka.id" type="date" v-model="production.red_date_pay" />
+                </td>
+                <td>
+                    {{ stroka.price }}
+                    <br />
+                    <input v-if="production.red_id==stroka.id" min="0" type="number" v-model="production.red_price" />
+                </td>
+                <td><input type="button" value="Удалить" v-on:click="delete_from_table('production.csv',stroka.id)" /></td>
+            </tr>
+            <tr>
+                <td><input v-on:click="production.vvod=!production.vvod" type="button" value="Создание/выбор" /></td>
+                <td>
+                    <input v-if="production.vvod" v-model="production.nazv" type="text" value="" />
+                    <select v-if="!production.vvod" v-model="production.nazv">
+                        <option v-for="i in production.nazv_vybor">{{ i }}</option>
+                    </select>
+                </td>
+                <td><input v-model="production.kvo" type="number" min="1" /></td>
+                <td><input v-model="production.date_start" v-bind:max="production.date_end" type="date" /></td>
+                <td><input v-model="production.date_end" v-bind:min="production.date_start" type="date" /></td>
+                <td><input v-model="production.date_pay" type="date" /></td>
+                <td><input v-model="production.price" type="number" min="0" /></td>
+                <td><input type="submit" value="Создать" v-on:click="add_to_table_production" /></td>
+            </tr>
+        </table>
+        <table v-if="page=='sostav'" border="1">
+            <tr>
+                <th></th>
+                <th v-if="i!='-'" v-for="i in sostav.rus">{{ i }}</th>
+                <th></th>
+            </tr>
+            <tr v-for="stroka in sostav.t" v-bind:class="{warning: podsvetka_id===stroka.id}">
+                <td>
+                    <input v-if="sostav.red_id!=stroka.id" type="button" value="Изменить" v-on:click="sostav.red_id=stroka.id;sostav.red_nazv_component=stroka.component;sostav.red_nazv_computer=stroka.computer;sostav.red_kvo=stroka.quantity" />
+                    <input v-if="sostav.red_id==stroka.id" type="button" value="Сохранить" v-on:click="save_sostav" />
+                    <br/>
+                    <input v-if="sostav.red_id==stroka.id" type="button" value="Отмена" v-on:click="sostav.red_id=-1" />
+                </td>
+                <td>
+                    {{ stroka.computer }}
+                    <br />
+                    <input v-if="(sostav.vvod)&&(sostav.red_id==stroka.id)" type="text" v-model="sostav.red_nazv_computer" />
+                    <select v-if="(!sostav.vvod)&&(sostav.red_id==stroka.id)" v-model="sostav.red_nazv_computer">
+                        <option v-for="i in sostav.nazv_vybor_computer">{{ i }}</option>
+                    </select>
+                </td>
+                <td>
+                    {{ stroka.component }}
+                    <br />
+                    <input v-if="(sostav.vvod)&&(orders.red_id==stroka.id)" type="text" v-model="sostav.red_nazv_component" />
+                    <select v-if="(!sostav.vvod)&&(sostav.red_id==stroka.id)" v-model="sostav.red_nazv_component">
+                        <option v-for="i in sostav.nazv_vybor_component">{{ i }}</option>
+                    </select>
+                </td>
+                <td>
+                    {{ stroka.quantity }}
+                    <br />
+                    <input v-if="sostav.red_id==stroka.id" type="number" min="0" v-model="sostav.red_kvo" />
+                </td>
+                <td><input type="button" value="Удалить" v-on:click="delete_from_table('sostav.csv',stroka.id)" /></td>
+            </tr>
+            <tr>
+                <td><input v-on:click="sostav.vvod=!sostav.vvod" type="button" value="Создание/выбор" /></td>
+                <td>
+                    <input v-if="sostav.vvod" v-model="sostav.nazv_computer" type="text" />
+                    <select v-if="!sostav.vvod" v-model="sostav.nazv_computer">
+                        <option v-for="i in sostav.nazv_vybor_computer">{{ i }}</option>
+                    </select>
+                </td>
+                <td>
+                    <input v-if="sostav.vvod" v-model="sostav.nazv_component" type="text" />
+                    <select v-if="!sostav.vvod" v-model="sostav.nazv_component">
+                        <option v-for="i in sostav.nazv_vybor_component">{{ i }}</option>
+                    </select>
+                </td>
+                <td><input v-model="sostav.kvo" type="number" min="1" /></td>
+                <td><input type="submit" value="Создать" v-on:click="add_to_table_sostav" /></td>
+            </tr>
+        </table>
+        <table v-if="page=='money'" border="1">
+            <tr>
+                <th></th>
+                <th v-if="i!='-'" v-for="i in money.rus">{{ i }}</th>
+                <th></th>
+            </tr>
+            <tr v-for="stroka in money.t" v-bind:class="{warning: podsvetka_id===stroka.id}">
+                <td>
+                    <input v-if="money.red_id!=stroka.id" type="button" value="Изменить" v-on:click="money.red_id=stroka.id;money.red_date=stroka.date.split('.')[2]+'-'+stroka.date.split('.')[1]+'-'+stroka.date.split('.')[0];money.red_amount=stroka.amount" />
+                    <input v-if="money.red_id==stroka.id" type="button" value="Сохранить" v-on:click="save_money" />
+                    <br/>
+                    <input v-if="money.red_id==stroka.id" type="button" value="Отмена" v-on:click="money.red_id=-1" />
+                </td>
+                <td>
+                    {{ stroka.date }}
+                    <br />
+                    <input v-if="money.red_id==stroka.id" type="date" v-model="money.red_date" />
+                </td>
+                <td>
+                    {{ stroka.amount }}
+                    <br />
+                    <input v-if="money.red_id==stroka.id" type="number" v-model="money.red_amount" />
+                </td>
+                <td><input type="button" value="Удалить" v-on:click="delete_from_table('money.csv',stroka.id)" /></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><input v-model="money.date" type="date" /></td>
+                <td><input v-model="money.amount" type="number" /></td>
+                <td><input type="submit" value="Создать" v-on:click="add_to_table_money" /></td>
+            </tr>
+        </table>
+        <div v-if="page==='plan'">
+            <select v-model="plan.page">
+                <option v-for="i in plan.pages" v-bind:value="i.page">
+                    {{ i.rus }}
+                </option>
+            </select>
+            <br />
+            <table v-if="plan.page==='money'" border="1">
+                <tr>
+                    <th>Дата</th>
+                    <th>Операция</th>
+                    <th>Сумма</th>
+                    <th>Баланс дня</th>
+                    <th>Баланс</th>
+                </tr>
+                <tr v-for="i in plan.t_money">
+                    <td v-if="i.new_day" v-bind:class="i.class" v-bind:rowspan="i.kvo">{{ i.date }}</td>
+                    <td v-bind:class="i.class">{{ i.op }}</td>
+                    <td v-bind:class="i.class">{{ i.amount }}</td>
+                    <td v-if="i.new_day" v-bind:class="i.class" v-bind:rowspan="i.kvo">{{ i.summa }}</td>
+                    <td v-if="i.new_day" v-bind:class="i.class" v-bind:rowspan="i.kvo">{{ i.itog }}</td>
+                </tr>
+            </table>
+            <div v-if="plan.page==='computers'">
+                <select v-model="plan.computer">
+                    <option v-for="i in plan.nazv_vybor_computer">{{ i }}</option>
+                </select>
+                <br />
+                <table border="1">
+                    <tr>
+                        <th>Дата</th>
+                        <th>Операция</th>
+                        <th>Сумма</th>
+                        <th>Баланс дня</th>
+                        <th>Баланс</th>
+                    </tr>
+                    <tr v-for="i in plan.t_computers[plan.computer]">
+                        <td v-if="i.new_day" v-bind:class="i.class" v-bind:rowspan="i.kvo">{{ i.date }}</td>
+                        <td v-bind:class="i.class">{{ i.op }}</td>
+                        <td v-bind:class="i.class">{{ i.amount }}</td>
+                        <td v-if="i.new_day" v-bind:class="i.class" v-bind:rowspan="i.kvo">{{ i.summa }}</td>
+                        <td v-if="i.new_day" v-bind:class="i.class" v-bind:rowspan="i.kvo">{{ i.itog }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div v-if="plan.page==='components'">
+                <select v-model="plan.component">
+                    <option v-for="i in plan.nazv_vybor_component">{{ i }}</option>
+                </select>
+                <br />
+                <table border="1">
+                    <tr>
+                        <th>Дата</th>
+                        <th>Операция</th>
+                        <th>Сумма</th>
+                        <th>Баланс дня</th>
+                        <th>Баланс</th>
+                    </tr>
+                    <tr v-for="i in plan.t_components[plan.component]">
+                        <td v-if="i.new_day" v-bind:class="i.class" v-bind:rowspan="i.kvo">{{ i.date }}</td>
+                        <td v-bind:class="i.class">{{ i.op }}</td>
+                        <td v-bind:class="i.class">{{ i.amount }}</td>
+                        <td v-if="i.new_day" v-bind:class="i.class" v-bind:rowspan="i.kvo">{{ i.summa }}</td>
+                        <td v-if="i.new_day" v-bind:class="i.class" v-bind:rowspan="i.kvo">{{ i.itog }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <table v-if="page=='errors'" border="1">
+            <tr>
+                <td>Дата</td>
+                <td>Раздел</td>
+                <td>Операция</td>
+                <td></td>
+            </tr>
+            <tr v-for="stroka in t_errors" class="warning">
+                <td>{{ stroka.date }}</td>
+                <td>{{ stroka.page }}</td>
+                <td>{{ stroka.operation }}</td>
+                <td><input type="button" v-on:click="stroka.otkr" value="Просмотр"></td>
+            </tr>
+        </table>
+    </div>
+    <div v-else>
+        Загрузка...
+    </div>
+</div>
+<script>
+    var RAZD=";";
+    var PROV_RAZD=function(m)
+    {
+        var f=true;
+        for(var i in m)
+        {
+            if(m[i].indexOf(RAZD)!==-1)
+            {
+                f=false;
+                break;
+            }
+        }
+        if(!f)
+        {
+            alert("Вводимое поле содержит недопустимый символ ("+RAZD+")");
+        }
+        return f;
+    }
+    var OTKR=function(page,id)
+    {
+        return function(){app.page=page;app.podsvetka_id=id};
+    }
+    var app = new Vue
+    ({
+        el: '#osn',
+        data:
+        {
+            page:"plan",
+            zagr: false,
+            z:[],
+            t:[],
+            orders:
+            {
+                z:[],
+                rus:[],
+                t:[],
+                nazv_vybor:[],
+                vvod:false,
+                nazv:"",
+                kvo:"",
+                date_supply:"",
+                date_order:"",
+                price:"",
+                red_id:-1,
+                red_nazv:"",
+                red_kvo:"",
+                red_date_order:"",
+                red_date_supply:"",
+                red_price:"",
+            },
+            sales:
+            {
+                z:[],
+                rus:[],
+                t:[],
+                nazv_vybor:[],
+                vvod:false,
+                nazv:"",
+                kvo:"",
+                date_pay:"",
+                date_ship:"",
+                price:"",
+                red_id:-1,
+                red_nazv:"",
+                red_kvo:"",
+                red_date:"",
+                red_price:"",
+            },
+            production:
+            {
+                z:[],
+                rus:[],
+                t:[],
+                nazv_vybor:[],
+                vvod:false,
+                nazv:"",
+                kvo:"",
+                date_start:"",
+                date_end:"",
+                date_pay:"",
+                price:"",
+                red_id:-1,
+                red_nazv:"",
+                red_kvo:"",
+                red_date_start:"",
+                red_date_end:"",
+                red_date_pay:"",
+                red_price:"",
+            },
+            sostav:
+            {
+                z:[],
+                rus:[],
+                t:[],
+                nazv_vybor_component:[],
+                nazv_vybor_computer:[],
+                vvod:false,
+                nazv_component:"",
+                nazv_computer:"",
+                kvo:"",
+                date:"",
+                hours:"",
+                red_id:-1,
+                red_nazv_computer:"",
+                red_nazv_component:"",
+                red_kvo:""
+            },
+            money:
+            {
+                z:[],
+                rus:[],
+                t:[],
+                date:"",
+                amount:"",
+                red_id:-1,
+                red_date:"",
+                red_amount:""
+            },
+            plan:
+            {
+                page:"money",
+                pages:
+                [
+                    {
+                        rus:"Баланс денежных средств",
+                        page:"money"
+                    },
+                    {
+                        rus:"Баланс компьютеров",
+                        page:"computers"
+                    },
+                    {
+                        rus:"Баланс компонентов",
+                        page:"components"
+                    }
+                ],
+                t_money:[],
+                t_computers:[],
+                computer:null,
+                t_components:[],
+                component:null,
+            },
+            t_errors:[],
+            podsvetka_id:-1,
+            menu:
+            [
+                {
+                    name:"Заказы компонентов",
+                    page:"orders"
+                },
+                {
+                    name:"Продажи",
+                    page:"sales"
+                },
+                {
+                    name:"Производство",
+                    page:"production"
+                },
+                {
+                    name:"Состав компьютеров",
+                    page:"sostav"
+                },
+                {
+                    name:"Финансовые операции",
+                    page:"money"
+                },
+                {
+                    name:"Планирование",
+                    page:"plan"
+                },
+                {
+                    name:"Ошибки планирования",
+                    page:"errors"
+                }
+            ]
+        },
+        methods:
+        {
+            delete_from_table:function(table,i)
+            {
+                this.zagr=true;
+                if(!confirm("Удалить запись?"))
+                {
+                    return;
+                }
+                $.get("delete.php",{table:table,id:i},function(data)
+                {
+                    getData();
+                });
+            },
+            add_to_table_orders:function()
+            {
+                if(!PROV_RAZD([this.orders.nazv,this.orders.kvo,this.orders.date_order,this.orders.date_supply,this.orders.price]))
+                {
+                    return;
+                }
+                if(this.orders.nazv=="")
+                {
+                    alert("Необходимо ввести название компонента");
+                    return;
+                }
+                var d=this.orders.nazv+RAZD;
+                if(this.orders.kvo=="")
+                {
+                    alert("Необходимо ввести количество");
+                    return;
+                }
+                d+=this.orders.kvo+RAZD;
+                if(this.orders.date_order=="")
+                {
+                    alert("Необходимо ввести дату заказа");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.orders.date_order)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.orders.date_order)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.orders.date_order)).getFullYear()+RAZD;
+                if(this.orders.date_supply=="")
+                {
+                    alert("Необходимо ввести дату поставки");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.orders.date_supply)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.orders.date_supply)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.orders.date_supply)).getFullYear()+RAZD;
+                if(this.orders.price=="")
+                {
+                    alert("Необходимо ввести стоимость");
+                    return;
+                }
+                d+=this.orders.price;
+                var ta=this;
+                $.get("add.php",{table:"order.csv",stroka:d},function(data)
+                {
+                    ta.orders.nazv="";
+                    ta.orders.date_supply="";
+                    ta.orders.date_order="";
+                    ta.orders.kvo="";
+                    ta.orders.price="";
+                    getData();
+                });
+            },
+            save_orders:function()
+            {
+                if(!PROV_RAZD([this.orders.red_nazv,this.orders.red_kvo,this.orders.red_date_order,this.orders.red_date_supply,this.orders.red_price]))
+                {
+                    return;
+                }
+                if(this.orders.red_nazv=="")
+                {
+                    alert("Необходимо ввести название компонента");
+                    return;
+                }
+                var d=this.orders.red_id+RAZD+this.orders.red_nazv+RAZD;
+                if(this.orders.red_kvo=="")
+                {
+                    alert("Необходимо ввести количество");
+                    return;
+                }
+                d+=this.orders.red_kvo+RAZD;
+                if(this.orders.red_date_order=="")
+                {
+                    alert("Необходимо ввести дату заказа");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.orders.red_date_order)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.orders.red_date_order)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.orders.red_date_order)).getFullYear()+RAZD;
+                if(this.orders.red_date_supply=="")
+                {
+                    alert("Необходимо ввести дату поставки");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.orders.red_date_supply)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.orders.red_date_supply)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.orders.red_date_supply)).getFullYear()+RAZD;
+                if(this.orders.red_price=="")
+                {
+                    alert("Необходимо ввести стоимость");
+                    return;
+                }
+                d+=this.orders.red_price;
+                var ta=this;
+                $.get("save.php",{table:"order.csv",stroka:d,id:this.orders.red_id},function(data)
+                {
+                    ta.orders.red_id=-1;
+                    getData();
+                });
+            },
+            add_to_table_sales:function()
+            {
+                if(!PROV_RAZD([this.sales.nazv]))
+                {
+                    return;
+                }
+                if(this.sales.nazv=="")
+                {
+                    alert("Необходимо ввести название компьютера");
+                    return;
+                }
+                var d=this.sales.nazv+RAZD;
+                if(this.sales.kvo=="")
+                {
+                    alert("Необходимо ввести количество");
+                    return;
+                }
+                d+=this.sales.kvo+RAZD;
+                if(this.sales.date_pay=="")
+                {
+                    alert("Необходимо ввести дату оплаты");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.sales.date_pay)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.sales.date_pay)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.sales.date_pay)).getFullYear()+RAZD;
+                if(this.sales.date_ship=="")
+                {
+                    alert("Необходимо ввести дату отгрузки");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.sales.date_ship)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.sales.date_ship)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.sales.date_ship)).getFullYear()+RAZD;
+                if(this.sales.price=="")
+                {
+                    alert("Необходимо ввести стоимость");
+                    return;
+                }
+                d+=this.sales.price;
+                var ta=this;
+                $.get("add.php",{table:"sales.csv",stroka:d},function(data)
+                {
+                    ta.sales.nazv="";
+                    ta.sales.date_ship="";
+                    ta.sales.date_pay="";
+                    ta.sales.kvo="";
+                    ta.sales.price="";
+                    getData();
+                });
+            },
+            save_sales:function()
+            {
+                if(!PROV_RAZD([this.sales.red_nazv]))
+                {
+                    return;
+                }
+                if(this.sales.red_nazv=="")
+                {
+                    alert("Необходимо ввести название компьютера");
+                    return;
+                }
+                var d=this.sales.red_id+RAZD+this.sales.red_nazv+RAZD;
+                if(this.sales.red_kvo=="")
+                {
+                    alert("Необходимо ввести количество");
+                    return;
+                }
+                d+=this.sales.red_kvo+RAZD;
+                if(this.sales.red_date_pay=="")
+                {
+                    alert("Необходимо ввести дату оплаты");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.sales.red_date_pay)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.sales.red_date_pay)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.sales.red_date_pay)).getFullYear()+RAZD;
+                if(this.sales.red_date_ship=="")
+                {
+                    alert("Необходимо ввести дату отгрузки");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.sales.red_date_ship)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.sales.red_date_ship)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.sales.red_date_ship)).getFullYear()+RAZD;
+                if(this.sales.red_price=="")
+                {
+                    alert("Необходимо ввести стоимость");
+                    return;
+                }
+                d+=this.sales.red_price;
+                var ta=this;
+                $.get("save.php",{table:"sales.csv",stroka:d,id:this.sales.red_id},function(data)
+                {
+                    ta.sales.red_id=-1;
+                    getData();
+                });
+            },
+            add_to_table_production:function()
+            {
+                if(!PROV_RAZD([this.production.nazv]))
+                {
+                    return;
+                }
+                if(this.production.nazv=="")
+                {
+                    alert("Необходимо ввести название компьютера");
+                    return;
+                }
+                var d=this.production.nazv+RAZD;
+                if(this.production.kvo=="")
+                {
+                    alert("Необходимо ввести количество");
+                    return;
+                }
+                d+=this.production.kvo+RAZD;
+                if(this.production.date_start=="")
+                {
+                    alert("Необходимо ввести дату передачи в производство");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.production.date_start)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.production.date_start)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.production.date_start)).getFullYear()+RAZD;
+                if(this.production.date_pay=="")
+                {
+                    alert("Необходимо ввести дату оплаты производства");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.production.date_pay)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.production.date_pay)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.production.date_pay)).getFullYear()+RAZD;
+                if(this.production.date_end=="")
+                {
+                    alert("Необходимо ввести дату завершения производства");
+                    return;
+                }
+                if(this.production.date_end<this.production.date_start)
+                {
+                    alert("Дата завершения производства не может быть раньше даты передачи в производство");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.production.date_end)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.production.date_end)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.production.date_end)).getFullYear()+RAZD;
+                if(this.production.price=="")
+                {
+                    alert("Необходимо ввести стоимость производства");
+                    return;
+                }
+                d+=this.production.price;
+                var ta=this;
+                $.get("add.php",{table:"production.csv",stroka:d},function(data)
+                {
+                    ta.production.nazv="";
+                    ta.production.date_start="";
+                    ta.production.date_end="";
+                    ta.production.date_pay="";
+                    ta.production.kvo="";
+                    ta.production.price="";
+                    getData();
+                });
+            },
+            save_production:function()
+            {
+                if(!PROV_RAZD([this.production.red_nazv]))
+                {
+                    return;
+                }
+                if(this.production.red_nazv=="")
+                {
+                    alert("Необходимо ввести название компьютера");
+                    return;
+                }
+                var d=this.production.red_id+RAZD+this.production.red_nazv+RAZD;
+                if(this.production.red_kvo=="")
+                {
+                    alert("Необходимо ввести количество");
+                    return;
+                }
+                d+=this.production.red_kvo+RAZD;
+                if(this.production.red_date_start=="")
+                {
+                    alert("Необходимо ввести дату передачи в производство");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.production.red_date_start)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.production.red_date_start)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.production.red_date_start)).getFullYear()+RAZD;
+                if(this.production.red_date_pay=="")
+                {
+                    alert("Необходимо ввести дату оплаты производства");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.production.red_date_pay)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.production.red_date_pay)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.production.red_date_pay)).getFullYear()+RAZD;
+                if(this.production.red_date_end=="")
+                {
+                    alert("Необходимо ввести дату завершения производства");
+                    return;
+                }
+                if(this.production.red_date_end<this.production.red_date_start)
+                {
+                    alert("Дата завершения производства не может быть раньше даты передачи в производство");
+                    return;
+                }
+                d+=("0"+new Date(Date.parse(this.production.red_date_end)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.production.red_date_end)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.production.red_date_end)).getFullYear()+RAZD;
+                if(this.production.red_price=="")
+                {
+                    alert("Необходимо ввести стоимость производства");
+                    return;
+                }
+                d+=this.production.red_price;
+                var ta=this;
+                $.get("save.php",{table:"production.csv",stroka:d,id:this.production.red_id},function(data)
+                {
+                    ta.production.red_id=-1;
+                    getData();
+                });
+            },
+            add_to_table_sostav:function()
+            {
+                if(!PROV_RAZD([this.sostav.nazv_computer,this.sostav.nazv_component]))
+                {
+                    return;
+                }
+                if(this.sostav.nazv_computer=="")
+                {
+                    alert("Необходимо ввести название компьютера");
+                    return;
+                }
+                var d=this.sostav.nazv_computer+RAZD;
+                if(this.sostav.nazv_component=="")
+                {
+                    alert("Необходимо ввести название компонента");
+                    return;
+                }
+                d+=this.sostav.nazv_component+RAZD;
+                if(this.sostav.kvo=="")
+                {
+                    alert("Необходимо ввести количество");
+                    return;
+                }
+                d+=this.sostav.kvo;
+                var ta=this;
+                $.get("add.php",{table:"sostav.csv",stroka:d},function(data)
+                {
+                    ta.sostav.nazv_component="";
+                    ta.sostav.nazv_computer="";
+                    ta.sostav.kvo="";
+                    getData();
+                });
+            },
+            save_sostav:function()
+            {
+                if(!PROV_RAZD([this.sostav.red_nazv_computer,this.sostav.red_nazv_component]))
+                {
+                    return;
+                }
+                if(this.sostav.red_nazv_computer=="")
+                {
+                    alert("Необходимо ввести название компьютера");
+                    return;
+                }
+                var d=this.sostav.red_id+RAZD+this.sostav.red_nazv_computer+RAZD;
+                if(this.sostav.red_nazv_component=="")
+                {
+                    alert("Необходимо ввести название компонента");
+                    return;
+                }
+                d+=this.sostav.red_nazv_component+RAZD;
+                if(this.sostav.red_kvo=="")
+                {
+                    alert("Необходимо ввести количество");
+                    return;
+                }
+                d+=this.sostav.red_kvo;
+                var ta=this;
+                $.get("save.php",{table:"sostav.csv",stroka:d,id:this.sostav.red_id},function(data)
+                {
+                    ta.sostav.red_id=-1;
+                    getData();
+                });
+            },
+            add_to_table_money:function()
+            {
+                if(this.money.date=="")
+                {
+                    alert("Необходимо ввести дату");
+                    return;
+                }
+                var d=("0"+new Date(Date.parse(this.money.date)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.money.date)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.money.date)).getFullYear()+RAZD;
+                if(this.money.amount=="")
+                {
+                    alert("Необходимо ввести сумму");
+                    return;
+                }
+                d+=this.money.amount;
+                var ta=this;
+                $.get("add.php",{table:"money.csv",stroka:d},function(data)
+                {
+                    ta.money.amount="";
+                    ta.money.date="";
+                    getData();
+                });
+            },
+            save_money:function()
+            {
+                if(this.money.red_date=="")
+                {
+                    alert("Необходимо ввести дату");
+                    return;
+                }
+                var d=this.money.red_id+RAZD+("0"+new Date(Date.parse(this.money.red_date)).getDate()).slice(-2)+"."+("0"+(new Date(Date.parse(this.money.red_date)).getMonth()+1)).slice(-2)+"."+new Date(Date.parse(this.money.red_date)).getFullYear()+RAZD;
+                if(this.money.red_amount=="")
+                {
+                    alert("Необходимо ввести сумму");
+                    return;
+                }
+                d+=this.money.red_amount;
+                var ta=this;
+                $.get("save.php",{table:"money.csv",stroka:d,id:this.money.red_id},function(data)
+                {
+                    ta.money.red_id=-1;
+                    getData();
+                });
+            },
+        }
+    });
+    getData=function()
+    {
+        app.zagr=false;
+        $.getJSON("getcsv.php",{},function(data)
+        {
+            var days=function(t)
+            {
+                var s=t.split(".")[0]*1;
+                s+=t.split(".")[1]*31;
+                s+=t.split(".")[2]*365;
+                return s;
+            }
+            app.t_errors=[];
+            //Заказы
+            app.orders.z=data["order.csv"].z;
+            app.orders.t=data["order.csv"].t;
+            app.orders.rus=data["order.csv"].rus;
+            app.orders.t.sort(function(a,b)
+            {
+                if(days(a.date_order)<days(b.date_order)){return -1}else{return 1}
+            });
+            app.orders.nazv_vybor=[];
+            for(var i in data["order.csv"].t)
+            {
+                app.orders.nazv_vybor.push(data["order.csv"].t[i].component);
+            }
+            for(var i in data["sostav.csv"].t)
+            {
+                app.orders.nazv_vybor.push(data["sostav.csv"].t[i].component);
+            }
+            app.orders.nazv_vybor=[...new Set(app.orders.nazv_vybor)];
+            app.orders.nazv_vybor.sort();
+            //Продажи
+            app.sales.z=data["sales.csv"].z;
+            app.sales.t=data["sales.csv"].t;
+            app.sales.rus=data["sales.csv"].rus;
+            app.sales.t.sort(function(a,b)
+            {
+                if(days(a.date_ship)<days(b.date_ship)){return -1}else{return 1}
+            });
+            app.sales.nazv_vybor=[];
+            for(var i in data["sales.csv"].t)
+            {
+                app.sales.nazv_vybor.push(data["sales.csv"].t[i].computer);
+            }
+            for(var i in data["production.csv"].t)
+            {
+                app.sales.nazv_vybor.push(data["production.csv"].t[i].computer);
+            }
+            for(var i in data["sostav.csv"].t)
+            {
+                app.sales.nazv_vybor.push(data["sostav.csv"].t[i].computer);
+            }
+            app.sales.nazv_vybor=[...new Set(app.sales.nazv_vybor)];
+            app.sales.nazv_vybor.sort();
+            //Производство
+            app.production.z=data["production.csv"].z;
+            app.production.t=data["production.csv"].t;
+            app.production.rus=data["production.csv"].rus;
+            app.production.t.sort(function(a,b)
+            {
+                if(days(a.date_start)<days(b.date_start)){return -1}else{return 1}
+            });
+            app.production.nazv_vybor=[];
+            for(var i in data["production.csv"].t)
+            {
+                app.production.nazv_vybor.push(data["production.csv"].t[i].computer);
+            }
+            for(var i in data["sales.csv"].t)
+            {
+                app.production.nazv_vybor.push(data["sales.csv"].t[i].computer);
+            }
+            for(var i in data["sostav.csv"].t)
+            {
+                app.production.nazv_vybor.push(data["sostav.csv"].t[i].computer);
+            }
+            app.production.nazv_vybor=[...new Set(app.production.nazv_vybor)];
+            app.production.nazv_vybor.sort();
+            //Состав компьютеров
+            app.sostav.z=data["sostav.csv"].z;
+            app.sostav.t=data["sostav.csv"].t;
+            app.sostav.rus=data["sostav.csv"].rus;
+            app.sostav.t.sort(function(a,b)
+            {
+                if(a.computer<b.computer){return -1}else{return 1}
+            });
+            app.sostav.nazv_vybor_computer=[];
+            for(var i in data["sostav.csv"].t)
+            {
+                app.sostav.nazv_vybor_computer.push(data["sostav.csv"].t[i].computer);
+            }
+            for(var i in data["sales.csv"].t)
+            {
+                app.sostav.nazv_vybor_computer.push(data["sales.csv"].t[i].computer);
+            }
+            for(var i in data["production.csv"].t)
+            {
+                app.sostav.nazv_vybor_computer.push(data["production.csv"].t[i].computer);
+            }
+            app.sostav.nazv_vybor_computer=[...new Set(app.sostav.nazv_vybor_computer)];
+            app.sostav.nazv_vybor_computer.sort();
+            app.sostav.nazv_vybor_component=[];
+            for(var i in data["sostav.csv"].t)
+            {
+                app.sostav.nazv_vybor_component.push(data["sostav.csv"].t[i].component);
+            }
+            for(var i in data["order.csv"].t)
+            {
+                app.sostav.nazv_vybor_component.push(data["order.csv"].t[i].component);
+            }
+            app.sostav.nazv_vybor_component=[...new Set(app.sostav.nazv_vybor_component)];
+            app.sostav.nazv_vybor_component.sort();
+
+            //Финансовые операции
+            app.money.z=data["money.csv"].z;
+            app.money.t=data["money.csv"].t;
+            app.money.rus=data["money.csv"].rus;
+            app.money.t.sort(function(a,b)
+            {
+                if(days(a.date)<days(b.date)){return -1}else{return 1}
+            });
+
+            //Планирование
+            app.plan.t_money=[];
+            for(var i in data["money.csv"].t)
+            {
+                app.plan.t_money.push({op:"Финансовая операция",error:"Финансовая операция: нехватка средств",date:data["money.csv"].t[i].date,amount:data["money.csv"].t[i].amount,page:"Финансовые операции",otkr:OTKR("money",data["money.csv"].t[i].id)})
+            }
+            for(var i in data["order.csv"].t)
+            {
+                app.plan.t_money.push({op:"Покупка компонентов",error:"Покупка компонентов: нехватка средств",date:data["order.csv"].t[i].date_order,amount:data["order.csv"].t[i].price*-1,page:"Заказы компонентов",otkr:OTKR("orders",data["order.csv"].t[i].id)})
+            }
+            for(var i in data["sales.csv"].t)
+            {
+                app.plan.t_money.push({op:"Продажа компьютеров",date:data["sales.csv"].t[i].date_pay,amount:data["sales.csv"].t[i].price,page:"Продажи",otkr:OTKR("sales",data["sales.csv"].t[i].id)})
+            }
+            for(var i in data["production.csv"].t)
+            {
+                app.plan.t_money.push({op:"Производство",error:"Производство: нехватка средств",date:data["production.csv"].t[i].date_pay,amount:data["production.csv"].t[i].price*-1,page:"Производство",otkr:OTKR("production",data["production.csv"].t[i].id)})
+            }
+            app.plan.t_money.sort(function(a,b)
+            {
+                if(days(a.date)<days(b.date)){return -1}else{return 1}
+            });
+            var summa={};
+            var kvo={};//количество одинаковых дней подряд
+            for(var i in app.plan.t_money)
+            {
+                if(summa[app.plan.t_money[i].date]===undefined)
+                {
+                    summa[app.plan.t_money[i].date]=0;
+                    app.plan.t_money[i].new_day=true;
+                    kvo[app.plan.t_money[i].date]=1;
+                }
+                else
+                {
+                    app.plan.t_money[i].new_day=false;
+                    kvo[app.plan.t_money[i].date]++;
+                }
+                summa[app.plan.t_money[i].date]+=app.plan.t_money[i].amount*1;
+            }
+            var itog={};
+            var ti=0;
+            for(var i in summa)
+            {
+                ti+=summa[i];
+                itog[i]=ti;
+            }
+            for(var i in app.plan.t_money)
+            {
+                app.plan.t_money[i].summa=summa[app.plan.t_money[i].date];
+                app.plan.t_money[i].itog=itog[app.plan.t_money[i].date];
+                app.plan.t_money[i].kvo=kvo[app.plan.t_money[i].date];
+                if(itog[app.plan.t_money[i].date]<0)
+                {
+                    app.plan.t_money[i].class="warning";
+                    app.t_errors.push({operation:app.plan.t_money[i].error,date:app.plan.t_money[i].date,otkr:app.plan.t_money[i].otkr,page:app.plan.t_money[i].page})
+                }
+            }
+            //План - компьютеры
+            app.plan.nazv_vybor_computer=app.sostav.nazv_vybor_computer;
+            app.plan.computer=app.plan.nazv_vybor_computer[0];
+            app.plan.t_computers=[];
+            for(var i in app.plan.nazv_vybor_computer)
+            {
+                var t_nazv=app.plan.nazv_vybor_computer[i];
+                app.plan.t_computers[t_nazv]=[];
+                for(var i2 in data["sales.csv"].t)
+                {
+                    if(data["sales.csv"].t[i2].computer===t_nazv)
+                    {
+                        app.plan.t_computers[t_nazv].push({op:"Отгрузка",error:"Отгрузка: нехватка компьютеров",date:data["sales.csv"].t[i2].date_ship,amount:data["sales.csv"].t[i2].quantity*-1,page:"Продажи",otkr:OTKR("sales",data["sales.csv"].t[i2].id)})
+                    }
+                }
+                for(var i2 in data["production.csv"].t)
+                {
+                    if(data["production.csv"].t[i2].computer===t_nazv)
+                    {
+                        app.plan.t_computers[t_nazv].push({op:"Производство",date:data["production.csv"].t[i2].date_end,amount:data["production.csv"].t[i2].quantity,page:"Производство",otkr:OTKR("production",data["production.csv"].t[i2].id)})
+                    }
+                }
+                app.plan.t_computers[t_nazv].sort(function(a,b)
+                {
+                    if(days(a.date)<days(b.date)){return -1}else{return 1}
+                });
+                var summa={};
+                var kvo={};
+                for(var i2 in app.plan.t_computers[t_nazv])
+                {
+                    if(summa[app.plan.t_computers[t_nazv][i2].date]===undefined)
+                    {
+                        summa[app.plan.t_computers[t_nazv][i2].date]=0;
+                        app.plan.t_computers[t_nazv][i2].new_day=true;
+                        kvo[app.plan.t_computers[t_nazv][i2].date]=1;
+                    }
+                    else
+                    {
+                        app.plan.t_computers[t_nazv][i2].new_day=false;
+                        kvo[app.plan.t_computers[t_nazv][i2].date]++;
+                    }
+                    summa[app.plan.t_computers[t_nazv][i2].date]+=app.plan.t_computers[t_nazv][i2].amount*1;
+                }
+                var itog={};
+                var ti=0;
+                for(var i2 in summa)
+                {
+                    ti+=summa[i2];
+                    itog[i2]=ti;
+                }
+                for(var i2 in app.plan.t_computers[t_nazv])
+                {
+                    app.plan.t_computers[t_nazv][i2].summa=summa[app.plan.t_computers[t_nazv][i2].date];
+                    app.plan.t_computers[t_nazv][i2].itog=itog[app.plan.t_computers[t_nazv][i2].date];
+                    app.plan.t_computers[t_nazv][i2].kvo=kvo[app.plan.t_computers[t_nazv][i2].date];
+                    if(itog[app.plan.t_computers[t_nazv][i2].date]<0)
+                    {
+                        app.plan.t_computers[t_nazv][i2].class="warning";
+                        app.t_errors.push({page:app.plan.t_computers[t_nazv][i2].page,operation:app.plan.t_computers[t_nazv][i2].error,date:app.plan.t_computers[t_nazv][i2].date,otkr:app.plan.t_computers[t_nazv][i2].otkr})
+                    }
+                }
+            }
+
+            //План - компоненты
+            app.plan.nazv_vybor_component=app.sostav.nazv_vybor_component;
+            app.plan.component=app.plan.nazv_vybor_component[0];
+            app.plan.t_components=[];
+            for(var i in app.plan.nazv_vybor_component)
+            {
+                var t_nazv=app.plan.nazv_vybor_component[i];
+                app.plan.t_components[t_nazv]=[];
+                for(var i2 in data["order.csv"].t)
+                {
+                    if(data["order.csv"].t[i2].component===t_nazv)
+                    {
+                        app.plan.t_components[t_nazv].push({op:"Поставка",date:data["order.csv"].t[i2].date_supply,amount:data["order.csv"].t[i2].quantity,page:"Заказы компонентов",otkr:OTKR("orders",data["order.csv"].t[i2].id)})
+                    }
+                }
+                var computers={};
+                for(var i2 in app.plan.nazv_vybor_computer)
+                {
+                    computers[app.plan.nazv_vybor_computer[i2]]=0;
+                }
+                for(var i2 in data["sostav.csv"].t)
+                {
+                    if(data["sostav.csv"].t[i2].component===t_nazv)
+                    {
+                        computers[data["sostav.csv"].t[i2].computer]+=data["sostav.csv"].t[i2].quantity*1;
+                    }
+                }
+                for(var i2 in data["production.csv"].t)
+                {
+                    if(computers[data["production.csv"].t[i2].computer]>0)
+                    {
+                        app.plan.t_components[t_nazv].push({op:"Передача в производство",error:"Передача в производство: нехватка компонентов",date:data["production.csv"].t[i2].date_start,amount:data["production.csv"].t[i2].quantity*computers[data["production.csv"].t[i2].computer]*-1,page:"Производство",otkr:OTKR("production",data["production.csv"].t[i2].id)})
+                    }
+                }
+                app.plan.t_components[t_nazv].sort(function(a,b)
+                {
+                    if(days(a.date)<days(b.date)){return -1}else{return 1}
+                });
+                var summa={};
+                var kvo={};
+                for(var i2 in app.plan.t_components[t_nazv])
+                {
+                    if(summa[app.plan.t_components[t_nazv][i2].date]===undefined)
+                    {
+                        summa[app.plan.t_components[t_nazv][i2].date]=0;
+                        app.plan.t_components[t_nazv][i2].new_day=true;
+                        kvo[app.plan.t_components[t_nazv][i2].date]=1;
+                    }
+                    else
+                    {
+                        app.plan.t_components[t_nazv][i2].new_day=false;
+                        kvo[app.plan.t_components[t_nazv][i2].date]++;
+                    }
+                    summa[app.plan.t_components[t_nazv][i2].date]+=app.plan.t_components[t_nazv][i2].amount*1;
+                }
+                var itog={};
+                var ti=0;
+                for(var i2 in summa)
+                {
+                    ti+=summa[i2];
+                    itog[i2]=ti;
+                }
+                for(var i2 in app.plan.t_components[t_nazv])
+                {
+                    app.plan.t_components[t_nazv][i2].summa=summa[app.plan.t_components[t_nazv][i2].date];
+                    app.plan.t_components[t_nazv][i2].itog=itog[app.plan.t_components[t_nazv][i2].date];
+                    app.plan.t_components[t_nazv][i2].kvo=kvo[app.plan.t_components[t_nazv][i2].date];
+                    if(itog[app.plan.t_components[t_nazv][i2].date]<0)
+                    {
+                        app.plan.t_components[t_nazv][i2].class="warning";
+                        app.t_errors.push({page:app.plan.t_components[t_nazv][i2].page,operation:app.plan.t_components[t_nazv][i2].error,date:app.plan.t_components[t_nazv][i2].date,otkr:app.plan.t_components[t_nazv][i2].otkr})
+                    }
+                }
+            }
+
+            //Ошибки планирования
+            app.t_errors.sort(function(a,b)
+            {
+                if(days(a.date)<days(b.date)){return -1}else{return 1}
+            });
+            app.menu[6].name="Ошибки планирования ("+app.t_errors.length+")";
+            app.podsvetka_id=-1;
+            app.zagr=true;
+        });
+    }
+    getData();
+</script>
