@@ -385,6 +385,32 @@
         {
             alert("Вводимое поле содержит недопустимый символ ("+RAZD+")");
         }
+        if(f)
+        {
+            for(var i in m)
+            {
+                if(isNaN(m[i]))
+                {
+                    if(m[i].length>100)
+                    {
+                        f=false;
+                        break;
+                    }
+                }
+                else
+                {
+                    if(m[i]*1>9999999999999999999999999999999999999)
+                    {
+                        f=false;
+                        break;
+                    }
+                }
+            }
+            if(!f)
+            {
+                alert("Длина поля не должна превышать 100 символов");
+            }
+        }
         return f;
     }
     var OTKR=function(page,id)
@@ -576,6 +602,11 @@
                     alert("Необходимо ввести количество");
                     return;
                 }
+                if(this.orders.kvo<=0)
+                {
+                    alert("Необходимо ввести положительное количество");
+                    return;
+                }
                 d+=this.orders.kvo+RAZD;
                 if(this.orders.date_order=="")
                 {
@@ -623,6 +654,11 @@
                     alert("Необходимо ввести количество");
                     return;
                 }
+                if(this.orders.red_kvo<=0)
+                {
+                    alert("Необходимо ввести положительное количество");
+                    return;
+                }
                 d+=this.orders.red_kvo+RAZD;
                 if(this.orders.red_date_order=="")
                 {
@@ -651,7 +687,7 @@
             },
             add_to_table_sales:function()
             {
-                if(!PROV_RAZD([this.sales.nazv]))
+                if(!PROV_RAZD([this.sales.nazv,this.sales.kvo,this.sales.price]))
                 {
                     return;
                 }
@@ -664,6 +700,21 @@
                 if(this.sales.kvo=="")
                 {
                     alert("Необходимо ввести количество");
+                    return;
+                }
+                if(this.sales.kvo<=0)
+                {
+                    alert("Необходимо ввести положительное количество");
+                    return;
+                }
+                if(!Number.isInteger(this.sales.kvo*1))
+                {
+                    alert("Необходимо ввести целое количество");
+                    return;
+                }
+                if(this.sales.kvo<=0)
+                {
+                    alert("Необходимо ввести положительное количество");
                     return;
                 }
                 d+=this.sales.kvo+RAZD;
@@ -698,7 +749,7 @@
             },
             save_sales:function()
             {
-                if(!PROV_RAZD([this.sales.red_nazv]))
+                if(!PROV_RAZD([this.sales.red_nazv,this.sales.red_kvo,this.sales.red_price]))
                 {
                     return;
                 }
@@ -711,6 +762,16 @@
                 if(this.sales.red_kvo=="")
                 {
                     alert("Необходимо ввести количество");
+                    return;
+                }
+                if(this.sales.red_kvo<=0)
+                {
+                    alert("Необходимо ввести положительное количество");
+                    return;
+                }
+                if(!Number.isInteger(this.sales.red_kvo*1))
+                {
+                    alert("Необходимо ввести целое количество");
                     return;
                 }
                 d+=this.sales.red_kvo+RAZD;
@@ -741,7 +802,7 @@
             },
             add_to_table_production:function()
             {
-                if(!PROV_RAZD([this.production.nazv]))
+                if(!PROV_RAZD([this.production.nazv,this.production.kvo,this.production.price]))
                 {
                     return;
                 }
@@ -800,7 +861,7 @@
             },
             save_production:function()
             {
-                if(!PROV_RAZD([this.production.red_nazv]))
+                if(!PROV_RAZD([this.production.red_nazv,this.production.red_kvo,this.production.red_price]))
                 {
                     return;
                 }
@@ -854,7 +915,7 @@
             },
             add_to_table_sostav:function()
             {
-                if(!PROV_RAZD([this.sostav.nazv_computer,this.sostav.nazv_component]))
+                if(!PROV_RAZD([this.sostav.nazv_computer,this.sostav.nazv_component,this.sostav.kvo]))
                 {
                     return;
                 }
@@ -887,7 +948,7 @@
             },
             save_sostav:function()
             {
-                if(!PROV_RAZD([this.sostav.red_nazv_computer,this.sostav.red_nazv_component]))
+                if(!PROV_RAZD([this.sostav.red_nazv_computer,this.sostav.red_nazv_component,this.sostav.red_kvo]))
                 {
                     return;
                 }
@@ -918,6 +979,10 @@
             },
             add_to_table_money:function()
             {
+                if(!PROV_RAZD([this.money.amount]))
+                {
+                    return;
+                }
                 if(this.money.date=="")
                 {
                     alert("Необходимо ввести дату");
@@ -940,6 +1005,10 @@
             },
             save_money:function()
             {
+                if(!PROV_RAZD([this.money.red_amount]))
+                {
+                    return;
+                }
                 if(this.money.red_date=="")
                 {
                     alert("Необходимо ввести дату");
@@ -1087,19 +1156,19 @@
             app.plan.t_money=[];
             for(var i in data["money.csv"].t)
             {
-                app.plan.t_money.push({op:"Финансовая операция",error:"Финансовая операция: нехватка средств",date:data["money.csv"].t[i].date,amount:data["money.csv"].t[i].amount,page:"Финансовые операции",otkr:OTKR("money",data["money.csv"].t[i].id)})
+                app.plan.t_money.push({op:"Финансовая операция", error:"Финансовая операция: нехватка средств",date:data["money.csv"].t[i].date,amount:data["money.csv"].t[i].amount,page:"Финансовые операции",otkr:OTKR("money",data["money.csv"].t[i].id)})
             }
             for(var i in data["order.csv"].t)
             {
-                app.plan.t_money.push({op:"Покупка компонентов",error:"Покупка компонентов: нехватка средств",date:data["order.csv"].t[i].date_order,amount:data["order.csv"].t[i].price*-1,page:"Заказы компонентов",otkr:OTKR("orders",data["order.csv"].t[i].id)})
+                app.plan.t_money.push({op:"Покупка компонентов", error:"Покупка компонентов: нехватка средств",date:data["order.csv"].t[i].date_order,amount:data["order.csv"].t[i].price*-1,page:"Заказы компонентов",otkr:OTKR("orders",data["order.csv"].t[i].id)})
             }
             for(var i in data["sales.csv"].t)
             {
-                app.plan.t_money.push({op:"Продажа компьютеров",date:data["sales.csv"].t[i].date_pay,amount:data["sales.csv"].t[i].price,page:"Продажи",otkr:OTKR("sales",data["sales.csv"].t[i].id)})
+                app.plan.t_money.push({op:"Продажа компьютеров", error:"Продажа компьютеров: нехватка средств",date:data["sales.csv"].t[i].date_pay,amount:data["sales.csv"].t[i].price,page:"Продажи",otkr:OTKR("sales",data["sales.csv"].t[i].id)})
             }
             for(var i in data["production.csv"].t)
             {
-                app.plan.t_money.push({op:"Производство",error:"Производство: нехватка средств",date:data["production.csv"].t[i].date_pay,amount:data["production.csv"].t[i].price*-1,page:"Производство",otkr:OTKR("production",data["production.csv"].t[i].id)})
+                app.plan.t_money.push({op:"Производство", error:"Производство: нехватка средств",date:data["production.csv"].t[i].date_pay,amount:data["production.csv"].t[i].price*-1,page:"Производство",otkr:OTKR("production",data["production.csv"].t[i].id)})
             }
             app.plan.t_money.sort(function(a,b)
             {
