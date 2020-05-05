@@ -8,8 +8,24 @@
         {
             background-color: #ffa9a9;
         }
+        th
+        {
+            background-color: #b0d2e2;
+        }
+        input[type = "button"], input[type = "submit"]
+        {
+            padding: 10px;
+        }
+
+           
+  
     </style>
 </head>
+
+<div><h3>Сидорова Марина ПИ3-2</h3><img src="https://pngicon.ru/file/uploads/kompjuter2.png" width="100px">
+    
+    <h3>Система управления цехом сборки компьютеров</h3> </div>
+
 <div id="osn">
     <div>
         <input type="button" v-for="i in menu" v-on:click="page=i.page;podsvetka_id=-1" v-bind:value="i.name" :disabled="page==i.page" />
@@ -351,10 +367,10 @@
         </div>
         <table v-if="page=='errors'" border="1">
             <tr>
-                <td>Дата</td>
-                <td>Раздел</td>
-                <td>Операция</td>
-                <td></td>
+                <th>Дата</th>
+                <th>Раздел</th>
+                <th>Операция</th>
+                <th></th>
             </tr>
             <tr v-for="stroka in t_errors" class="warning">
                 <td>{{ stroka.date }}</td>
@@ -1228,7 +1244,7 @@
                 {
                     if(data["production.csv"].t[i2].computer===t_nazv)
                     {
-                        app.plan.t_computers[t_nazv].push({op:"Производство",date:data["production.csv"].t[i2].date_end,amount:data["production.csv"].t[i2].quantity,page:"Производство",otkr:OTKR("production",data["production.csv"].t[i2].id)})
+                        app.plan.t_computers[t_nazv].push({op:"Производство", error:"Производство: отрицательное количество готовых компьютеров",date:data["production.csv"].t[i2].date_end,amount:data["production.csv"].t[i2].quantity,page:"Производство",otkr:OTKR("production",data["production.csv"].t[i2].id)})
                     }
                 }
                 app.plan.t_computers[t_nazv].sort(function(a,b)
